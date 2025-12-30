@@ -4,11 +4,19 @@ An intelligent chatbot assistant for Lagro High School's Senior High School prog
 
 ## Features
 
-- **AI-Powered Responses**: Utilizes Google's Gemini 2.0 Flash model for intelligent, context-aware responses
-- **PDF Knowledge Base**: Integrates school information from PDF documents for accurate answers
-- **Conversation History**: Maintains session-based conversation history for contextual responses
-- **Modern UI**: Clean, responsive interface with dark/light theme support
-- **Real-time Chat**: Instant responses with message timestamps
+### Public Features (No Login Required)
+- **Homepage**: Informative landing page with school information
+- **Programs Overview**: Details about STEM, HUMSS, ABM, and TVL tracks
+- **Contact Information**: Easy access to school contact details and social media
+- **Responsive Design**: Works seamlessly on desktop and mobile devices
+
+### Protected Features (Login Required)
+- **Google OAuth Authentication**: Secure sign-in with Google accounts
+- **AI-Powered Chatbot**: Access to Ask Lagronian AI assistant
+- **Conversation History**: Session-based chat history for contextual responses
+- **PDF Knowledge Base**: AI trained on comprehensive school information
+- **Real-time Responses**: Instant answers with timestamps
+- **User Profile**: Personalized experience with user information
 - **Comprehensive Coverage**: Information about:
   - Academic tracks and strands (STEM, HUMSS, ABM, TVL)
   - Enrollment procedures
@@ -20,6 +28,7 @@ An intelligent chatbot assistant for Lagro High School's Senior High School prog
 ## Tech Stack
 
 - **Backend**: Flask (Python)
+- **Authentication**: Google OAuth 2.0 (Authlib)
 - **AI Model**: Google Gemini 2.0 Flash
 - **Frontend**: HTML, CSS, JavaScript
 - **Deployment**: Vercel-ready configuration
@@ -31,6 +40,7 @@ An intelligent chatbot assistant for Lagro High School's Senior High School prog
 - Python 3.8 or higher
 - pip (Python package installer)
 - Google Gemini API key
+- Google Cloud Project (for OAuth credentials)
 
 ### Setup Steps
 
@@ -56,26 +66,40 @@ An intelligent chatbot assistant for Lagro High School's Senior High School prog
    pip install -r requirements.txt
    ```
 
-4. **Set up environment variables**
+4. **Set up Google OAuth Credentials**
+   - Go to [Google Cloud Console](https://console.cloud.google.com/)
+   - Create a new project or select an existing one
+   - Enable the Google+ API
+   - Go to "Credentials" → "Create Credentials" → "OAuth 2.0 Client ID"
+   - Choose "Web application"
+   - Add authorized redirect URI: `http://localhost:5000/authorize` (for local development)
+   - Save the Client ID and Client Secret
+
+5. **Set up environment variables**
    - Copy `.env.example` to `.env`
    ```bash
    cp .env.example .env
    ```
-   - Edit `.env` and add your Google Gemini API key:
+   - Edit `.env` and add your credentials:
    ```
-   GEMINI_API_KEY=your_actual_api_key_here
-   SECRET_KEY=your_secret_key_here
+   GEMINI_API_KEY=your_gemini_api_key_here
+   SECRET_KEY=your_secret_key_here (generate a random string)
+   GOOGLE_CLIENT_ID=your_google_client_id
+   GOOGLE_CLIENT_SECRET=your_google_client_secret
    ```
 
-   Get your Gemini API key from: https://makersuite.google.com/app/apikey
+   - Get Gemini API key from: https://makersuite.google.com/app/apikey
+   - Get OAuth credentials from: https://console.cloud.google.com/apis/credentials
 
-5. **Run the application**
+6. **Run the application**
    ```bash
    python app.py
    ```
 
-6. **Open your browser**
-   Navigate to `http://localhost:5000`
+7. **Open your browser**
+   - Navigate to `http://localhost:5000` for the homepage
+   - Click "Sign In" to login with Google
+   - After authentication, you'll be redirected to the chatbot
 
 ## Project Structure
 
@@ -87,15 +111,18 @@ asklagronian/
 ├── .gitignore                      # Git ignore rules
 ├── vercel.json                     # Vercel deployment config
 ├── wsgi.py                         # WSGI entry point
-├── Lagro High School - Data.pdf    # School information PDF
+├── Lagro High School - Data.pdf    # School information PDF (local only, not in repo)
 ├── static/
 │   ├── css/
-│   │   └── style.css              # Styling
+│   │   ├── style.css              # Chatbot page styling
+│   │   └── home.css               # Homepage styling
 │   ├── js/
-│   │   └── script.js              # Frontend JavaScript
+│   │   ├── script.js              # Chatbot JavaScript
+│   │   └── home.js                # Homepage JavaScript
 │   └── images/                     # Image assets
 └── templates/
-    └── index.html                  # Main HTML template
+    ├── home.html                   # Public homepage
+    └── chatbot.html                # Protected chatbot page
 ```
 
 ## Configuration
@@ -103,7 +130,9 @@ asklagronian/
 ### Environment Variables
 
 - `GEMINI_API_KEY`: Your Google Gemini API key (required)
-- `SECRET_KEY`: Flask secret key for session management (auto-generated if not provided)
+- `SECRET_KEY`: Flask secret key for session management (required)
+- `GOOGLE_CLIENT_ID`: Google OAuth Client ID (required)
+- `GOOGLE_CLIENT_SECRET`: Google OAuth Client Secret (required)
 
 ### PDF Knowledge Base
 
@@ -115,7 +144,16 @@ PDF_FILE_PATH = 'Lagro High School - Data .pdf'
 
 ## API Endpoints
 
-- `GET /` - Main chatbot interface
+### Public Routes
+- `GET /` - Homepage (public, no login required)
+
+### Authentication Routes
+- `GET /login` - Initiate Google OAuth login
+- `GET /authorize` - OAuth callback handler
+- `GET /logout` - Logout and clear session
+
+### Protected Routes (Require Login)
+- `GET /chatbot` - Chatbot interface (login required)
 - `POST /send_message` - Send a message and get AI response
 - `POST /clear_history` - Clear conversation history for current session
 
@@ -136,6 +174,11 @@ PDF_FILE_PATH = 'Lagro High School - Data .pdf'
 3. Set environment variables in Vercel dashboard:
    - `GEMINI_API_KEY`
    - `SECRET_KEY`
+   - `GOOGLE_CLIENT_ID`
+   - `GOOGLE_CLIENT_SECRET`
+
+4. Update OAuth redirect URI in Google Cloud Console:
+   - Add your Vercel domain: `https://your-app.vercel.app/authorize`
 
 ### Deploy to Other Platforms
 
@@ -169,13 +212,18 @@ Make sure to set the environment variables on your deployment platform.
 
 This improved version includes:
 
-1. **Session Management**: Maintains conversation context across messages
-2. **Error Handling**: Comprehensive error handling with proper logging
-3. **Input Validation**: Validates and sanitizes user input
-4. **Security**: Protected API keys, proper .gitignore configuration
-5. **Logging**: Detailed logging for debugging and monitoring
-6. **Documentation**: Complete README and code comments
-7. **Code Organization**: Better structured and more maintainable code
+1. **Google OAuth Authentication**: Secure login with Google accounts
+2. **Public Homepage**: Informative landing page with school information
+3. **Protected Chatbot**: Chatbot accessible only after authentication
+4. **Session Management**: Maintains conversation context across messages
+5. **Error Handling**: Comprehensive error handling with proper logging
+6. **Input Validation**: Validates and sanitizes user input
+7. **Security**: Protected API keys, OAuth security, proper .gitignore
+8. **Functional Navigation**: Working menu with clickable links
+9. **User Profiles**: Display logged-in user information
+10. **Logging**: Detailed logging for debugging and monitoring
+11. **Modern Design**: Educational website with responsive layout
+12. **Documentation**: Complete setup instructions and API documentation
 
 ## Usage Tips
 

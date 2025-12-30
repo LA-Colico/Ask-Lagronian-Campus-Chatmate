@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, session
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for
 import google.generativeai as genai
 import os
 from datetime import datetime
@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 import uuid
 import logging
 from functools import wraps
+from authlib.integrations.flask_client import OAuth
 
 # Load environment variables
 load_dotenv()
@@ -36,8 +37,30 @@ app.secret_key = os.getenv('SECRET_KEY', str(uuid.uuid4()))
 app.config['SESSION_TYPE'] = 'filesystem'
 app.config['PERMANENT_SESSION_LIFETIME'] = 3600  # 1 hour
 
+# OAuth Configuration
+oauth = OAuth(app)
+google = oauth.register(
+    name='google',
+    client_id=os.getenv('GOOGLE_CLIENT_ID'),
+    client_secret=os.getenv('GOOGLE_CLIENT_SECRET'),
+    server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
+    client_kwargs={
+        'scope': 'openid email profile'
+    }
+)
+
 # Store conversation histories per session
 conversation_histories = {}
+
+
+def login_required(f):
+    """Decorator to require login for routes"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user' not in session:
+            return redirect(url_for('login', next=request.url))
+        return f(*args, **kwargs)
+    return decorated_function
 
 # Path to your PDF file (adjust as needed)
 PDF_FILE_PATH = 'Lagro High School - Data .pdf'
@@ -381,8 +404,57 @@ def get_conversation_history(session_id):
 
 
 @app.route('/')
-def index():
-    return render_template('index.html', conversations=sample_conversations)
+def home():
+    """Public homepage"""
+    return render_template('home.html')
+
+
+@app.route('/login')
+def login():
+    """Login page"""
+    redirect_uri = url_for('authorize', _external=True)
+    return google.authorize_redirect(redirect_uri)
+
+
+@app.route('/authorize')
+def authorize():
+    """OAuth callback"""
+    try:
+        token = google.authorize_access_token()
+        user_info = token.get('userinfo')
+
+        if user_info:
+            session['user'] = {
+                'email': user_info.get('email'),
+                'name': user_info.get('name'),
+                'picture': user_info.get('picture')
+            }
+            logger.info(f"User logged in: {user_info.get('email')}")
+            return redirect(url_for('chatbot'))
+        else:
+            logger.error("Failed to get user info")
+            return redirect(url_for('home'))
+    except Exception as e:
+        logger.error(f"OAuth error: {str(e)}")
+        return redirect(url_for('home'))
+
+
+@app.route('/logout')
+def logout():
+    """Logout user"""
+    session.pop('user', None)
+    session.pop('session_id', None)
+    logger.info("User logged out")
+    return redirect(url_for('home'))
+
+
+@app.route('/chatbot')
+@login_required
+def chatbot():
+    """Protected chatbot page - requires login"""
+    return render_template('chatbot.html',
+                         conversations=sample_conversations,
+                         user=session.get('user'))
 
 
 @app.route('/send_message', methods=['POST'])
