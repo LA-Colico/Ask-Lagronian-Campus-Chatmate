@@ -1,18 +1,43 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, session
 import google.generativeai as genai
 import os
 from datetime import datetime
 from dotenv import load_dotenv
 import uuid
+import logging
+from functools import wraps
 
 # Load environment variables
 load_dotenv()
 
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('app.log'),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger(__name__)
+
 # Configure the Gemini API
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+api_key = os.getenv("GEMINI_API_KEY")
+if not api_key:
+    logger.error("GEMINI_API_KEY not found in environment variables")
+    raise ValueError("GEMINI_API_KEY must be set in environment variables")
+
+genai.configure(api_key=api_key)
 
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', str(uuid.uuid4()))
+
+# Session configuration
+app.config['SESSION_TYPE'] = 'filesystem'
+app.config['PERMANENT_SESSION_LIFETIME'] = 3600  # 1 hour
+
+# Store conversation histories per session
+conversation_histories = {}
 
 # Path to your PDF file (adjust as needed)
 PDF_FILE_PATH = 'Lagro High School - Data .pdf'
@@ -312,8 +337,10 @@ sample_conversations = [
 def get_initial_contents():
     """Load initial contents including the PDF file"""
     try:
+        logger.info(f"Loading PDF file: {PDF_FILE_PATH}")
         # Upload the PDF file to Gemini
         uploaded_file = genai.upload_file(PDF_FILE_PATH)
+        logger.info(f"PDF file uploaded successfully: {uploaded_file.uri}")
 
         return [
             {
@@ -330,11 +357,27 @@ def get_initial_contents():
             }
         ]
     except Exception as e:
-        print(f"Error loading initial contents: {str(e)}")
+        logger.error(f"Error loading initial contents: {str(e)}")
         return []
 
 
 initial_contents = get_initial_contents()
+
+
+def get_session_id():
+    """Get or create session ID"""
+    if 'session_id' not in session:
+        session['session_id'] = str(uuid.uuid4())
+        logger.info(f"New session created: {session['session_id']}")
+    return session['session_id']
+
+
+def get_conversation_history(session_id):
+    """Get conversation history for a session"""
+    if session_id not in conversation_histories:
+        conversation_histories[session_id] = []
+        logger.info(f"New conversation history created for session: {session_id}")
+    return conversation_histories[session_id]
 
 
 @app.route('/')
@@ -345,18 +388,43 @@ def index():
 @app.route('/send_message', methods=['POST'])
 def send_message():
     try:
-        user_message = request.json.get('message', '')
+        # Input validation
+        if not request.json:
+            logger.warning("Request with no JSON data")
+            return jsonify({"error": "Invalid request format"}), 400
+
+        user_message = request.json.get('message', '').strip()
 
         if not user_message:
+            logger.warning("Empty message received")
             return jsonify({"error": "Empty message"}), 400
 
-        # Prepare the contents for Gemini including initial context
-        contents = initial_contents + [
-            {
-                "role": "user",
-                "parts": [{"text": user_message}]
-            }
-        ]
+        # Check message length (prevent abuse)
+        if len(user_message) > 2000:
+            logger.warning(f"Message too long: {len(user_message)} characters")
+            return jsonify({"error": "Message too long. Please keep it under 2000 characters."}), 400
+
+        # Get session and conversation history
+        session_id = get_session_id()
+        conversation_history = get_conversation_history(session_id)
+
+        logger.info(f"Session {session_id}: Processing message of {len(user_message)} characters")
+
+        # Build conversation contents with history
+        contents = initial_contents.copy()
+
+        # Add conversation history
+        for hist_msg in conversation_history:
+            contents.append({
+                "role": hist_msg["role"],
+                "parts": [{"text": hist_msg["content"]}]
+            })
+
+        # Add current user message
+        contents.append({
+            "role": "user",
+            "parts": [{"text": user_message}]
+        })
 
         # Generate response from Gemini
         model = genai.GenerativeModel('gemini-2.0-flash',
@@ -367,6 +435,24 @@ def send_message():
         # Get the response text
         assistant_response = response.text
 
+        # Store in conversation history
+        conversation_history.append({
+            "role": "user",
+            "content": user_message,
+            "timestamp": datetime.now().strftime("%H:%M")
+        })
+        conversation_history.append({
+            "role": "model",
+            "content": assistant_response,
+            "timestamp": datetime.now().strftime("%H:%M")
+        })
+
+        # Keep only last 20 exchanges (40 messages) to prevent memory issues
+        if len(conversation_history) > 40:
+            conversation_history[:] = conversation_history[-40:]
+
+        logger.info(f"Session {session_id}: Response generated successfully")
+
         # Create response object
         response_data = {
             "response": assistant_response,
@@ -376,11 +462,36 @@ def send_message():
         return jsonify(response_data)
 
     except Exception as e:
-        print(f"Error: {str(e)}")
+        logger.error(f"Error processing message: {str(e)}", exc_info=True)
         return jsonify({
             "error": "Sorry, I encountered an error while processing your request.",
             "timestamp": datetime.now().strftime("%H:%M")
         }), 500
+
+
+@app.route('/clear_history', methods=['POST'])
+def clear_history():
+    """Clear conversation history for current session"""
+    try:
+        session_id = get_session_id()
+        if session_id in conversation_histories:
+            conversation_histories[session_id] = []
+            logger.info(f"Session {session_id}: Conversation history cleared")
+        return jsonify({"success": True, "message": "Conversation history cleared"})
+    except Exception as e:
+        logger.error(f"Error clearing history: {str(e)}")
+        return jsonify({"error": "Failed to clear history"}), 500
+
+
+@app.errorhandler(404)
+def not_found(e):
+    return jsonify({"error": "Resource not found"}), 404
+
+
+@app.errorhandler(500)
+def internal_error(e):
+    logger.error(f"Internal server error: {str(e)}")
+    return jsonify({"error": "Internal server error"}), 500
 
 
 if __name__ == '__main__':
