@@ -45,3 +45,7 @@ htmlcov/
 
 # Vercel
 .vercel
+
+# School Data Files
+Lagro High School - Data .pdf
+*.pdf
