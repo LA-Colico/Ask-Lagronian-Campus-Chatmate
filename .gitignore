@@ -46,6 +46,4 @@ htmlcov/
 # Vercel
 .vercel
 
-# School Data Files
-Lagro High School - Data .pdf
-*.pdf
+# School Data Files - PDF is tracked in repo for deployment

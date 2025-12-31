@@ -11,12 +11,11 @@ from authlib.integrations.flask_client import OAuth
 # Load environment variables
 load_dotenv()
 
-# Configure logging
+# Configure logging (Vercel-compatible)
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('app.log'),
         logging.StreamHandler()
     ]
 )
@@ -63,7 +62,8 @@ def login_required(f):
     return decorated_function
 
 # Path to your PDF file (adjust as needed)
-PDF_FILE_PATH = 'Lagro High School - Data .pdf'
+import sys
+PDF_FILE_PATH = os.path.join(os.path.dirname(__file__), 'Lagro High School - Data .pdf')
 
 # System instruction for the chatbot
 SYSTEM_INSTRUCTION = """
@@ -360,31 +360,36 @@ sample_conversations = [
 def get_initial_contents():
     """Load initial contents including the PDF file"""
     try:
-        logger.info(f"Loading PDF file: {PDF_FILE_PATH}")
-        # Upload the PDF file to Gemini
-        uploaded_file = genai.upload_file(PDF_FILE_PATH)
-        logger.info(f"PDF file uploaded successfully: {uploaded_file.uri}")
+        if os.path.exists(PDF_FILE_PATH):
+            logger.info(f"Loading PDF file: {PDF_FILE_PATH}")
+            # Upload the PDF file to Gemini
+            uploaded_file = genai.upload_file(PDF_FILE_PATH)
+            logger.info(f"PDF file uploaded successfully: {uploaded_file.uri}")
 
-        return [
-            {
-                "role": "user",
-                "parts": [
-                    {"file_data": {"mime_type": uploaded_file.mime_type, "file_uri": uploaded_file.uri}},
-                    {"text": "Hi"}
-                ]
-            },
-            {
-                "role": "model",
-                "parts": [{
-                              "text": "Hey there! 👋 This is a summary of the Senior High School information extracted from the document you shared."}]
-            }
-        ]
+            return [
+                {
+                    "role": "user",
+                    "parts": [
+                        {"file_data": {"mime_type": uploaded_file.mime_type, "file_uri": uploaded_file.uri}},
+                        {"text": "Hi"}
+                    ]
+                },
+                {
+                    "role": "model",
+                    "parts": [{
+                                  "text": "Hey there! 👋 This is a summary of the Senior High School information extracted from the document you shared."}]
+                }
+            ]
+        else:
+            logger.warning(f"PDF file not found at {PDF_FILE_PATH}. Starting without PDF context.")
+            return []
     except Exception as e:
         logger.error(f"Error loading initial contents: {str(e)}")
         return []
 
 
-initial_contents = get_initial_contents()
+# Initialize contents (will be loaded on first request if needed)
+initial_contents = []
 
 
 def get_session_id():
@@ -482,8 +487,13 @@ def send_message():
 
         logger.info(f"Session {session_id}: Processing message of {len(user_message)} characters")
 
+        # Initialize PDF content if not already loaded
+        global initial_contents
+        if not initial_contents:
+            initial_contents = get_initial_contents()
+
         # Build conversation contents with history
-        contents = initial_contents.copy()
+        contents = initial_contents.copy() if initial_contents else []
 
         # Add conversation history
         for hist_msg in conversation_history:

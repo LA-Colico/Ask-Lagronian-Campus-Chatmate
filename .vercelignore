@@ -1,0 +1,14 @@
+venv/
+env/
+ENV/
+__pycache__/
+*.py[cod]
+*$py.class
+*.log
+app.log
+.env
+.env.local
+.vscode/
+.idea/
+README.md
+SETUP_GUIDE.md
