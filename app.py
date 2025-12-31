@@ -509,7 +509,7 @@ def send_message():
         })
 
         # Generate response from Gemini
-        model = genai.GenerativeModel('gemini-2.0-flash',
+        model = genai.GenerativeModel('models/gemini-2.5-flash',
                                       system_instruction=SYSTEM_INSTRUCTION)
 
         response = model.generate_content(contents)
