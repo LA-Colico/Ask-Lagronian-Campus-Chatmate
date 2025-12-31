@@ -32,23 +32,25 @@
 
     <!-- Hero Section -->
     <section id="home" class="hero">
-        <div class="hero-content">
-            <h1 class="hero-title">Welcome to Lagro High School</h1>
-            <p class="hero-subtitle">Excellence in Senior High School Education</p>
-            <p class="hero-description">Empowering students through quality education and holistic development</p>
-            <div class="hero-buttons">
-                <a href="{{ url_for('login') }}" class="btn btn-primary">
-                    <i class="fas fa-comments"></i> Chat with Ask Lagronian
-                </a>
-                <a href="#about" class="btn btn-secondary">
-                    <i class="fas fa-info-circle"></i> Learn More
-                </a>
+        <div class="hero-container">
+            <div class="hero-content">
+                <h1 class="hero-title">Welcome to <span class="highlight">Lagro High School</span></h1>
+                <p class="hero-subtitle">Excellence in Senior High School Education</p>
+                <p class="hero-description">Empowering students through quality education and holistic development</p>
+                <div class="hero-buttons">
+                    <a href="{{ url_for('login') }}" class="btn btn-primary">
+                        <i class="fas fa-comments"></i> Chat with Ask Lagronian
+                    </a>
+                    <a href="#about" class="btn btn-secondary">
+                        <i class="fas fa-info-circle"></i> Learn More
+                    </a>
+                </div>
             </div>
-        </div>
-        <div class="hero-image">
-            <div class="chatbot-preview">
-                <i class="fas fa-robot"></i>
-                <p>Your AI Assistant for SHS Information</p>
+            <div class="hero-image">
+                <div class="chatbot-preview">
+                    <img src="{{ url_for('static', filename='images/bot_avatar.png') }}" alt="Ask Lagronian AI">
+                    <p>Your AI Assistant for SHS Information</p>
+                </div>
             </div>
         </div>
     </section>
@@ -170,24 +172,43 @@
                         <a href="https://lhs.depedqc.ph" target="_blank"><i class="fas fa-globe"></i></a>
                     </div>
                 </div>
-                <div class="contact-links">
-                    <h3>Quick Links</h3>
-                    <ul>
-                        <li><a href="https://lhs.depedqc.ph" target="_blank">Official Website</a></li>
-                        <li><a href="https://www.facebook.com/LHSCourier" target="_blank">LHS Courier (Publication)</a></li>
-                        <li><a href="https://www.facebook.com/lagrohighschoolelib" target="_blank">E-Library</a></li>
-                        <li><a href="https://www.facebook.com/Lhsregistrar2021" target="_blank">Registrar</a></li>
-                    </ul>
-                </div>
             </div>
         </div>
     </section>
 
     <!-- Footer -->
     <footer class="footer">
-        <div class="footer-content">
-            <p>&copy; 2025 Lagro High School. All rights reserved.</p>
-            <p>Developed by Lanz Andrei Colico</p>
+        <div class="footer-container">
+            <div class="footer-grid">
+                <div class="footer-section">
+                    <h3>Lagro High School</h3>
+                    <p>Excellence in Senior High School Education</p>
+                    <div class="footer-social">
+                        <a href="https://www.facebook.com/AskLagroHigh" target="_blank"><i class="fab fa-facebook"></i></a>
+                        <a href="https://lhs.depedqc.ph" target="_blank"><i class="fas fa-globe"></i></a>
+                    </div>
+                </div>
+                <div class="footer-section">
+                    <h3>Quick Links</h3>
+                    <ul class="footer-links">
+                        <li><a href="https://lhs.depedqc.ph" target="_blank">Official Website</a></li>
+                        <li><a href="https://www.facebook.com/LHSCourier" target="_blank">LHS Courier</a></li>
+                        <li><a href="https://www.facebook.com/lagrohighschoolelib" target="_blank">E-Library</a></li>
+                        <li><a href="https://www.facebook.com/Lhsregistrar2021" target="_blank">Registrar</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>Contact</h3>
+                    <p>Misa De Gallo St., Brgy. Greater Lagro</p>
+                    <p>Novaliches, Quezon City</p>
+                    <p>Phone: 8939 1092</p>
+                    <p>Email: hs.lagro@depedqc.ph</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 Lagro High School. All rights reserved.</p>
+                <p>Developed by Lanz Andrei Colico</p>
+            </div>
         </div>
     </footer>
 
