@@ -384,7 +384,8 @@ body {
 
 /* Input Area */
 .input-container {
-    padding: 40px;
+    padding: 20px;
+    padding-bottom: 20px;
     background: var(--white);
     border-top: 1px solid var(--border-color);
     border-radius: 24px 24px 0 0;
@@ -582,4 +583,5 @@ body {
 * {
     transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
 }
+
 
