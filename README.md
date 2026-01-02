@@ -260,9 +260,9 @@ This improved version includes:
 
 ## Credits
 
-- **Developer**: Lanz Colico (Former Lagro High School student)
+- **Developer**: Lanz Colico
 - **School**: Lagro High School, Quezon City
-- **AI Model**: Google Gemini 2.0 Flash
+- **AI Model**: Google Gemini AI
 
 ## License
 
